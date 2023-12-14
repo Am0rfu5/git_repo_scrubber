@@ -2,10 +2,11 @@ mod extractor;
 mod ammender;
 
 use extractor::extractor::{extract_commit_data, save_to_json};
-use ammender::ammender::amend_commits;
+use ammender::ammender::sequence_builder;
 use std::env;
 use std::path::Path;
 use std::fs;
+use std::process::Command;
 
 fn run_extractor(repo_path: &str, file_path: &str) -> Result<(), String> {
     // Extract and save commit data
@@ -18,9 +19,26 @@ fn run_extractor(repo_path: &str, file_path: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn run_ammender(repo_path: &str, file_path: &str, new_author: &str, new_email: &str) -> Result<(), String> {
-    // Amend commits
-    amend_commits(file_path, new_author, new_email)
+fn run_rebaser(repo_path: &str, file_path: &str, new_author: &str, new_email: &str) -> Result<(), String> {
+    // Build the sequence editor script
+    sequence_builder(file_path, new_author, new_email)?;
+
+    let git_dir = format!("--git-dir=\"{}\"", repo_path);
+    
+    // Configure Git to use the sequence_editor script
+    Command::new("git")
+        .args([&git_dir, "config", "sequence.editor", "sh sequence_editor.sh"])
+        .status()
+        .map_err(|e| e.to_string())?;
+
+    // Start the interactive rebase
+    let git_dir = format!("--git-dir=\"{}\"", repo_path);
+    Command::new("git")
+        .args([&git_dir, "rebase", "-i", "--root"]) // adjust as needed
+        .status()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 fn main() {
@@ -68,7 +86,7 @@ fn main() {
             }
         },
         "--amend" | "-a" => {
-            if let Err(e) = run_ammender(repo_path, &file_path, &new_author, &new_email) {
+            if let Err(e) = run_rebaser(&repo_path, &file_path, &new_author, &new_email) {
                 eprintln!("Error: {}", e);
                 std::process::exit(1);
             }
@@ -78,7 +96,7 @@ fn main() {
                 eprintln!("Error: {}", e);
                 std::process::exit(1);
             }
-            if let Err(e) = run_ammender(repo_path, &file_path, &new_author, &new_email) {
+            if let Err(e) = run_rebaser(&repo_path, &file_path, &new_author, &new_email) {
                 eprintln!("Error: {}", e);
                 std::process::exit(1);
             }
@@ -90,25 +108,41 @@ fn main() {
     }
 }
 
-
-// #[cfg(test)]
-// mod tests {
-//     use super::run;
-//     use tempfile::NamedTempFile;
+#[cfg(test)]
+mod tests {
+    use super::run_rebaser;
+    use super::run_extractor;
+    use tempfile::NamedTempFile;
     
-//     #[test]
-//     fn test_run_extract() {
-//         // Arrange
-//         let test_repo_path = "../test_repo"; // Update with actual test repo path
-//         let temp_file = NamedTempFile::new().expect("Failed to create temporary file");
-//         let temp_file_path = temp_file.path().to_str().unwrap();
-//         let new_author = "New Author";
-//         let new_email = "new_email@example.com";
+    #[test]
+    fn test_run_extract() {
+        // Arrange
+        let test_repo_path = "../test_repo"; // Update with actual test repo path
+        // let temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+        let test_file_path = "test/data/test_repo_commit_data.json";
+        // let temp_file_path = temp_file.path().to_str().unwrap();
+        let new_author = "New Author";
+        let new_email = "new_email@example.com";
 
-//         // Act
-//         let result = run(test_repo_path, temp_file_path, new_author, new_email);
+        // Act
+        let result = run_extractor(test_repo_path, test_file_path);
 
-//         // Assert
-//         assert!(result.is_ok());
-//     }   
-// }
+        // Assert
+        assert!(result.is_ok());
+    }   
+
+    #[test]
+    fn test_run_rebase() {
+        // Arrange
+        let test_repo_path = "../test_repo"; // Update with actual test repo path
+        let test_file_path = "test/data/test_repo_commit_data.json";
+        let new_author = "New Author";
+        let new_email = "new_email@example.com";
+        
+        // Act
+        let result = run_rebaser(test_repo_path, test_file_path, new_author, new_email);
+        
+        // Assert
+        assert!(result.is_ok());
+    }
+}

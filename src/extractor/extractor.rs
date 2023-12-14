@@ -5,6 +5,7 @@ use std::fs;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CommitData {
     sha: String,
+    comment: String,
     date: String,
 }
 
@@ -19,9 +20,13 @@ pub fn extract_commit_data(repo_path: &str) -> Result<Vec<CommitData>, Error> {
     for oid in revwalk {
         let commit = repo.find_commit(oid?)?;
         let sha = commit.id().to_string();
+        let comment = commit.message()
+            .unwrap_or("")
+            .trim_end()
+            .to_string();
         let date = commit.time().seconds().to_string();
 
-        commit_data_list.push(CommitData { sha, date });
+        commit_data_list.push(CommitData { sha, comment, date });
     }
 
     Ok(commit_data_list)
@@ -53,18 +58,18 @@ mod tests {
         let commits = result.unwrap();
 
         assert_eq!(commits.len(), 4);
-        assert_eq!(commits[0].sha, "5f2d4b7468be1b13c9919e29c0ebe24aa6c88945");
-        save_to_json(&commits, "commit_data.json").expect("Error saving JSON");
+        assert_eq!(commits[0].sha, "0239187061c3cc536d51b9d34c95390c9ab1e8ef");
+        // save_to_json(&commits, "data/commit_data.json").expect("Error saving JSON");
     }
 
     #[test]
     fn test_save_to_json() {
         // Arrange: Create mock data and a temporary file
         let mock_data = vec![
-        CommitData { sha: "5f2d4b7468be1b13c9919e29c0ebe24aa6c88945".into(), date: "1702435688".into() },
-        CommitData { sha: "38111bc1c0547a6debb0b836f4271f5987d35d4c".into(), date: "1702435549".into() },
-        CommitData { sha: "a0e6bc34b3d8b7d6efdf0f359d6a5780af3bf082".into(), date: "1702435492".into() },
-        CommitData { sha: "20aebad0585f3c7ddbf22e599fd16e9691d5a1b4".into(), date: "1702435437".into() },
+        CommitData { sha: "5f2d4b7468be1b13c9919e29c0ebe24aa6c88945".into(), comment: "Fourth commit".into(), date: "1702435688".into() },
+        CommitData { sha: "38111bc1c0547a6debb0b836f4271f5987d35d4c".into(), comment: "Third commit".into(), date: "1702435549".into() },
+        CommitData { sha: "a0e6bc34b3d8b7d6efdf0f359d6a5780af3bf082".into(), comment: "Second commit".into(), date: "1702435492".into() },
+        CommitData { sha: "20aebad0585f3c7ddbf22e599fd16e9691d5a1b4".into(), comment: "Initial commit".into(), date: "1702435437".into() },
         ];
 
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
