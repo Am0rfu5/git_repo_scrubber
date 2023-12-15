@@ -7,7 +7,11 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.31"
+clap = { version = "4.4.11", features = ["derive"] }
+dotenv = "0.15.0"
 git2 = "0.18.1"
+log = "0.4.20"
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
+simplelog = "0.12.1"
 tempfile = "3.8.1"
