@@ -91,9 +91,6 @@ fn run_rebaser(repo_path: &str, file_path: &str, new_author: &str, new_email: &s
 }
 
 fn handle_sequence_editor(todo_file_path: &str) -> Result<(), String> {
-    // Read the git-rebase-todo file
-    // let mut content = fs::read_to_string(todo_file_path)
-    //     .map_err(|e| e.to_string())?;
     
     // Read the content from the sequence_editor file
     // TODO move the sequence_editor file to a struct?
@@ -154,10 +151,6 @@ fn main() {
             .expect("Error running rebaser");
     }
 
-    // if cli.extract_amend {
-    //     run_extractor(&cli.repo_path, &file_path).expect("Error running extractor");
-    //     run_rebaser(&cli.repo_path, &file_path, cli.author.as_deref().unwrap_or(""), cli.email.as_deref().unwrap_or("")).expect("Error running rebaser");
-    // }
 }
 
 #[cfg(test)]
