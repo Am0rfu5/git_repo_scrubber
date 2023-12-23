@@ -17,7 +17,7 @@ fn setup_logging() -> Result<(), SetLoggerError> {
     WriteLogger::init(
         LevelFilter::Info,
         Config::default(),
-        File::create("my_app.log").unwrap(),
+        File::create("gitgen.log").unwrap(),
     )
 }
 
